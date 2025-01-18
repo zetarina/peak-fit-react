@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+
+# Build output
+build/
+dist/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Firebase service account
+src/service-account.json
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor and system files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Misc
+coverage/
+*.log

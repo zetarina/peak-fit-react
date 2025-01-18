@@ -1,0 +1,282 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: #e0d9ce;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.navLinks a {
+  margin: 0 1rem;
+  text-decoration: none;
+  color: #333;
+}
+
+.authButtons {
+  display: flex;
+}
+
+.loginButton,
+.signUpButton {
+  margin-left: 1rem;
+  padding: 0.5rem 2rem;
+  border: none;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.loginButton {
+  background-color: #fff;
+}
+
+.signUpButton {
+  background-color: #fff;
+}
+
+.banner {
+  background-image: url("./images/fitness.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100vh;
+  min-height: 100vh;
+}
+
+.bannerContent {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  color: white;
+  border-radius: 8px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.bannerImage {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  margin-top: 20px;
+}
+
+.footer {
+  background-color: #333;
+  color: white;
+  padding: 2rem 1rem;
+  font-family: Arial, sans-serif;
+}
+
+.footerContent {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.footerSection {
+  flex: 1;
+  min-width: 200px;
+  text-align: center;
+}
+
+.footerSection h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #f39c12;
+}
+
+.footerSection .followText {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.socialIcons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.socialIcon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #000;
+  color: white;
+  font-size: 1.2rem;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.socialIcon i {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1rem;
+  line-height: normal;
+  vertical-align: middle;
+  pointer-events: none;
+  height: 100%;
+  width: 100%;
+}
+
+.socialIcon.facebook {
+  background-color: #1877f2;
+}
+
+.socialIcon.facebook:hover {
+  background-color: #145dbf;
+}
+
+.socialIcon.instagram {
+  background: linear-gradient(
+    45deg,
+    #f09433,
+    #e6683c,
+    #dc2743,
+    #cc2366,
+    #bc1888
+  ); /* Instagram gradient */
+}
+
+.socialIcon.instagram:hover {
+  background: linear-gradient(
+    45deg,
+    #e6683c,
+    #dc2743,
+    #cc2366,
+    #bc1888,
+    #9c1888
+  ); /* Slightly modified gradient on hover */
+}
+
+.socialIcon.twitter {
+  background-color: #000;
+}
+
+.socialIcon.twitter:hover {
+  background-color: #000;
+}
+
+.socialIcon i {
+  pointer-events: none;
+}
+
+.footerSection a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  margin: 0.3rem 0;
+  font-size: 0.9rem;
+}
+
+.footerSection a:hover {
+  color: #f39c12;
+}
+
+.footerBottom {
+  text-align: center;
+  margin-top: 2rem;
+  border-top: 1px solid #555;
+  padding-top: 1rem;
+}
+
+.footerBottom a {
+  color: white;
+  margin: 0 0.5rem;
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+
+.footerBottom a:hover {
+  color: #f39c12;
+}
+/* BENEFITS*/
+
+/* CSS */
+.benefits-container {
+  text-align: center;
+  padding: 40px;
+  background-color: #f4f4f4;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.intro-text {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #555;
+}
+
+.benefits-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 30px;
+  margin: 30px 0;
+}
+
+.benefit-card {
+  background-color: #fff;
+  padding: 20px;
+  width: 250px;
+  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.benefit-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.icon {
+  font-size: 40px;
+  color: #5f9ea0;
+  margin-bottom: 20px;
+}
+
+.cta-button {
+  margin-top: 40px;
+  padding: 12px 30px;
+  background-color: #5f9ea0;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 18px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.cta-button:hover {
+  background-color: #4a8281;
+}
