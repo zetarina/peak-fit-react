@@ -11,13 +11,13 @@ const firebaseConfig = {
   projectId: "workout-app-test-b7af4",
   storageBucket: "workout-app-test-b7af4.firebasestorage.app",
   messagingSenderId: "891549320424",
-  appId: "1:891549320424:web:7c0b4c8de5124f8030355d",
+
   measurementId: "G-2F88X5YXD9",
+  appId: "1:891549320424:web:7c0b4c8de5124f8030355d",
 };
 const app = initializeApp(firebaseConfig);
 
-const auth = getAuth(app); 
+const auth = getAuth(app);
 const analytics = getAnalytics(app);
-
 
 export { auth, analytics };

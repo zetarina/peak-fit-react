@@ -5,7 +5,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
-
+import { getDatabase, ref, get, onValue, off } from "firebase/database";
 class FirebaseService {
   // Login with email and password
   static async login(email, password) {
@@ -106,6 +106,33 @@ class FirebaseService {
           throw new Error(error.message || "Failed to register.");
       }
     }
+  }
+  // Read user-specific data once
+  static async readUserData(path) {
+    try {
+      const db = getDatabase();
+      const snapshot = await get(ref(db, path));
+      if (snapshot.exists()) {
+        return snapshot.val();
+      } else {
+        throw new Error("No data found at the specified path.");
+      }
+    } catch (error) {
+      throw new Error(`Failed to read data: ${error.message}`);
+    }
+  }
+
+  // Listen to user-specific data in real-time
+  static listenToUserData(path, callback) {
+    const db = getDatabase();
+    const userRef = ref(db, path);
+
+    const listener = onValue(userRef, (snapshot) => {
+      callback(snapshot.val());
+    });
+
+    // Cleanup listener
+    return () => off(userRef, "value", listener);
   }
 }
 

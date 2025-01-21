@@ -1,50 +1,14 @@
 import React from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+import useUserApprovalStatus from "@/hooks/useUserApprovalStatus";
 import home from "@/images/home.png";
 import user from "@/images/user.png";
 import mail from "@/images/mail.png";
 import workout from "@/images/workout.png";
 import limitation from "@/images/limitation.png";
-import goal from "@/images/goal.png";
 import exit from "@/images/exit.png";
-
-const Header = () => (
-  <header style={styles.header}>
-    <h1 style={styles.headerTitle}>
-      PEAK FIT <span style={styles.hseparator}>|</span>
-      <span style={styles.partnerText}>Partners</span>
-    </h1>
-  </header>
-);
-
-const Sidebar = ({ onLogout }) => (
-  <aside style={styles.sidebar}>
-    <nav>
-      <ul style={styles.sidebarNav}>
-        {sidebarItems.map((item, index) => (
-          <li key={index} style={styles.sidebarNavItem}>
-            <a href={item.link} style={styles.linkStyle}>
-              <img src={item.icon} alt={item.label} style={styles.icon} />
-              {item.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-      <hr style={styles.separator} />
-      <ul style={styles.sidebarFooter}>
-        <li
-          style={{ ...styles.sidebarNavItem, color: "#d9534f" }}
-          onClick={onLogout}
-        >
-          <a href="#" style={styles.linkStyle}>
-            <img src={exit} alt="Logout" style={styles.icon} />
-            Logout
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </aside>
-);
 
 const sidebarItems = [
   { label: "Home Page", link: "/dashboard", icon: home },
@@ -56,24 +20,74 @@ const sidebarItems = [
     link: "/dashboard/personalizedworkout",
     icon: limitation,
   },
-  // {
-  //   label: "Manage Goal Workouts",
-  //   link: "/dashboard/goalpersonalisedworkout",
-  //   icon: goal,
-  // },
 ];
 
 const DashboardLayout = () => {
+  const { isApproved, loading } = useUserApprovalStatus();
   const navigate = useNavigate();
-
   const handleLogout = () => {
     localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
     sessionStorage.removeItem("authToken");
-    sessionStorage.removeItem("user");
-
     navigate("/login");
   };
+
+  if (loading) {
+    return (
+      <div style={styles.fullPageContainer}>
+        <h1>Loading...</h1>
+      </div>
+    );
+  }
+
+  if (!isApproved) {
+    return (
+      <div style={styles.fullPageContainer}>
+        <h1>Verifying Your Profile...</h1>
+        <p>
+          Your account is under review. Once approved, you'll be able to access
+          the dashboard.
+        </p>
+      </div>
+    );
+  }
+
+  const Header = () => (
+    <header style={styles.header}>
+      <h1 style={styles.headerTitle}>
+        PEAK FIT <span style={styles.hseparator}>|</span>
+        <span style={styles.partnerText}>Partners</span>
+      </h1>
+    </header>
+  );
+
+  const Sidebar = ({ onLogout }) => (
+    <aside style={styles.sidebar}>
+      <nav>
+        <ul style={styles.sidebarNav}>
+          {sidebarItems.map((item, index) => (
+            <li key={index} style={styles.sidebarNavItem}>
+              <a href={item.link} style={styles.linkStyle}>
+                <img src={item.icon} alt={item.label} style={styles.icon} />
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <hr style={styles.separator} />
+        <ul style={styles.sidebarFooter}>
+          <li
+            style={{ ...styles.sidebarNavItem, color: "#d9534f" }}
+            onClick={onLogout}
+          >
+            <a href="#" style={styles.linkStyle}>
+              <img src={exit} alt="Logout" style={styles.icon} />
+              Logout
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+  );
 
   return (
     <div style={styles.dashboard}>
@@ -87,6 +101,25 @@ const DashboardLayout = () => {
 };
 
 const styles = {
+  fullPageContainer: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh",
+    backgroundColor: "#f7f7f7",
+    textAlign: "center",
+  },
+  verifyingContainer: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    textAlign: "center",
+    backgroundColor: "#f7f7f7",
+    color: "#333",
+  },
   dashboard: {
     display: "grid",
     gridTemplateColumns: "250px 1fr",
