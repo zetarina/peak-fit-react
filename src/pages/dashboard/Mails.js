@@ -17,7 +17,7 @@ const Mails = () => {
   useEffect(() => {
     const fetchPendingWorkouts = async () => {
       try {
-        const data = await ApiService.get("/api/workouts/pending");
+        const data = await ApiService.get("/workouts/pending");
         setWorkouts(data.data); // Assuming the API response includes `data`
       } catch (error) {
         console.error("Error fetching workouts:", error.message);
@@ -29,7 +29,7 @@ const Mails = () => {
 
   const refreshWorkouts = async () => {
     try {
-      const data = await ApiService.get("/api/workouts/pending");
+      const data = await ApiService.get("/workouts/pending");
       setWorkouts(data.data);
     } catch (error) {
       console.error("Error refreshing workouts:", error.message);
@@ -71,7 +71,7 @@ const Mails = () => {
     setModalVisible(false);
     setCurrentVideoUrl("");
   };
-  
+
   const handleApprove = async (id) => {
     const workoutToApprove = workouts.find((workout) => workout.id === id);
 
@@ -81,7 +81,7 @@ const Mails = () => {
     }
 
     try {
-      const response = await ApiService.post("/api/workouts/approve", {
+      const response = await ApiService.post("/workouts/approve", {
         workout: workoutToApprove,
       });
 
@@ -106,7 +106,7 @@ const Mails = () => {
   const handleDecline = async (id) => {
     try {
       // Call API to delete the workout
-      const response = await ApiService.delete(`/api/workouts/pending/${id}`);
+      const response = await ApiService.delete(`/workouts/pending/${id}`);
 
       if (response.success) {
         console.log("Workout declined successfully");

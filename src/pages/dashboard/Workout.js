@@ -35,7 +35,7 @@ const WorkoutTable = () => {
   useEffect(() => {
     const fetchApprovedWorkouts = async () => {
       try {
-        const response = await ApiService.get("/api/workouts/approved");
+        const response = await ApiService.get("/workouts/approved");
         setWorkoutsList(response.data);
       } catch (error) {
         console.error("Error fetching approved workouts:", error.message);
@@ -211,7 +211,7 @@ const WorkoutTable = () => {
 
     try {
       const response = await ApiService.post(
-        "/api/workouts/createApproved",
+        "/workouts/createApproved",
         newWorkoutData
       );
 
@@ -270,7 +270,7 @@ const WorkoutTable = () => {
         try {
           // Bulk upload new workouts via API
           const uploadPromises = newWorkouts.map((workout) =>
-            ApiService.post("/api/workouts/createApproved", workout)
+            ApiService.post("/workouts/createApproved", workout)
           );
           const responses = await Promise.all(uploadPromises);
   
