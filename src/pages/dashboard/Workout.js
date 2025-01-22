@@ -82,14 +82,32 @@ const WorkoutTable = () => {
     setIsDeleteModalOpen(true); // Open modal
   };
 
-  const confirmDelete = () => {
-    const updatedWorkouts = workoutsList.filter(
-      (workout) => workout.id !== workoutToDelete
-    );
-    setWorkoutsList(updatedWorkouts);
-    setIsDeleteModalOpen(false);
-    if (updatedWorkouts.length % workoutsPerPage === 0 && currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  const confirmDelete = async () => {
+    try {
+      // Call the delete API
+      const response = await ApiService.delete(
+        `/api/workouts/approved/${workoutToDelete}`
+      );
+
+      if (response.success) {
+        console.log("Workout deleted successfully:", response.message);
+
+        // Update the local state to remove the deleted workout
+        const updatedWorkouts = workoutsList.filter(
+          (workout) => workout.id !== workoutToDelete
+        );
+        setWorkoutsList(updatedWorkouts);
+        setIsDeleteModalOpen(false);
+
+        // Adjust the current page if needed
+        if (updatedWorkouts.length % workoutsPerPage === 0 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
+      } else {
+        console.error("Failed to delete workout:", response.message);
+      }
+    } catch (error) {
+      console.error("Error deleting workout:", error.message);
     }
   };
 
@@ -132,12 +150,29 @@ const WorkoutTable = () => {
     }
   };
 
-  const handleSave = () => {
-    const updatedWorkouts = workoutsList.map((workout) =>
-      workout.id === updatedWorkout.id ? updatedWorkout : workout
-    );
-    setWorkoutsList(updatedWorkouts);
-    setEditingWorkout(null); // Exit edit mode
+  const handleSave = async () => {
+    try {
+      // Call the update API
+      const response = await ApiService.put(
+        `/api/workouts/approved/${updatedWorkout.id}`,
+        updatedWorkout
+      );
+
+      if (response.success) {
+        console.log("Workout updated successfully:", response.message);
+
+        // Update the local state with the updated workout
+        const updatedWorkouts = workoutsList.map((workout) =>
+          workout.id === updatedWorkout.id ? updatedWorkout : workout
+        );
+        setWorkoutsList(updatedWorkouts);
+        setEditingWorkout(null); // Exit edit mode
+      } else {
+        console.error("Failed to update workout:", response.message);
+      }
+    } catch (error) {
+      console.error("Error updating workout:", error.message);
+    }
   };
 
   const handleSearch = (e) => {
@@ -241,24 +276,26 @@ const WorkoutTable = () => {
   // Add Bulk Workouts
   const handleBulkUpload = async (e) => {
     const file = e.target.files[0]; // Get the uploaded file
-  
+
     if (file) {
       const reader = new FileReader();
-  
+
       reader.onload = async () => {
         const data = reader.result;
         const workbook = XLSX.read(data, { type: "binary" });
-  
+
         // Assume data is in the first sheet
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  
+
         // Convert sheet data to JSON
         const jsonData = XLSX.utils.sheet_to_json(sheet);
-  
+
         // Map the data to match the workout structure
         const newWorkouts = jsonData.map((workout) => ({
           thumbnail: workout.videoUrl
-            ? `https://img.youtube.com/vi/${getVideoId(workout.videoUrl)}/hqdefault.jpg`
+            ? `https://img.youtube.com/vi/${getVideoId(
+                workout.videoUrl
+              )}/hqdefault.jpg`
             : "",
           title: workout.title,
           date: workout.date || "",
@@ -266,26 +303,26 @@ const WorkoutTable = () => {
           type: workout.type,
           videoUrl: workout.videoUrl,
         }));
-  
+
         try {
           // Bulk upload new workouts via API
           const uploadPromises = newWorkouts.map((workout) =>
             ApiService.post("/workouts/createApproved", workout)
           );
           const responses = await Promise.all(uploadPromises);
-  
+
           // Update local state with successfully added workouts
           const successfulWorkouts = responses
             .filter((response) => response.success)
             .map((response) => response.data);
           setWorkoutsList([...workoutsList, ...successfulWorkouts]);
-  
+
           setIsAddModalOpen(false); // Close the modal
         } catch (error) {
           console.error("Error uploading workouts:", error.message);
         }
       };
-  
+
       reader.readAsBinaryString(file); // Read the file as binary string
     }
   };
