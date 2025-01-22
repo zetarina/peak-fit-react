@@ -86,7 +86,7 @@ const WorkoutTable = () => {
     try {
       // Call the delete API
       const response = await ApiService.delete(
-        `/api/workouts/approved/${workoutToDelete}`
+        `/workouts/approved/${workoutToDelete}`
       );
 
       if (response.success) {
@@ -154,7 +154,7 @@ const WorkoutTable = () => {
     try {
       // Call the update API
       const response = await ApiService.put(
-        `/api/workouts/approved/${updatedWorkout.id}`,
+        `/workouts/approved/${updatedWorkout.id}`,
         updatedWorkout
       );
 
