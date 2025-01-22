@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import ApiService from "@/services/ApiService";
 // Workout Page Component
 const Mails = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -12,116 +12,29 @@ const Mails = () => {
   const [editableWorkouts, setEditableWorkouts] = useState({});
   const [isEdited, setIsEdited] = useState({});
   // Initial Workouts Data
-  const [workouts, setWorkouts] = useState([
-    {
-      id: 1, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/NfSB6sNFvO4/0.jpg",
-      title: "---",
-      date: "01/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/NfSB6sNFvO4",
-    },
-    {
-      id: 2, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/q_kYnAShnnI/0.jpg",
-      title: "---",
-      date: "01/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/q_kYnAShnnI",
-    },
-    {
-      id: 3, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/Pp44Y390Ffs/0.jpg",
-      title: "---",
-      date: "01/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/Pp44Y390Ffs?si=v0YImQobcShqGOM9",
-    },
-    {
-      id: 4, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/SALxEARiMkw/0.jpg",
-      title: "---",
-      date: "01/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/SALxEARiMkw?si=yAUbizvm2OBn479h",
-    },
-    {
-      id: 5, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/N5x5M1x1Gd0/0.jpg",
-      title: "---",
-      date: "02/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/N5x5M1x1Gd0?si=GNPotH8eKjnFWVV5",
-    },
-    {
-      id: 6, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/BRVDS6HVR9Q/0.jpg",
-      title: "---",
-      date: "02/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/BRVDS6HVR9Q?si=xjIPC1pQQHK9scAD",
-    },
-    {
-      id: 7, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/_g97w3QfD6E/0.jpg",
-      title: "---",
-      date: "02/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/_g97w3QfD6E?si=QyA072rDfxDsSSYX",
-    },
-    {
-      id: 8, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/geNkbcZ6qDo/0.jpg",
-      title: "---",
-      date: "02/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/geNkbcZ6qDo?si=FNvxSvzGXyGg_cgc",
-    },
-    {
-      id: 9, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/_RlRDWO2jfg/0.jpg",
-      title: "---",
-      date: "02/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/_RlRDWO2jfg?si=6X7B8yQYlZjHWZ5a",
-    },
-    {
-      id: 10, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/XPPfnSEATJA/0.jpg",
-      title: "---",
-      date: "02/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/XPPfnSEATJA?si=IIr_A5nobyHST_nM",
-    },
-    {
-      id: 11, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/xhk1JkbF2lg/0.jpg",
-      title: "---",
-      date: "03/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/xhk1JkbF2lg?si=iIpUDu3E--vJiWJM",
-    },
-    {
-      id: 12, // Unique identifier
-      thumbnail: "https://img.youtube.com/vi/s0kT80JLCfA/0.jpg",
-      title: "---",
-      date: "03/01/2025",
-      level: "---",
-      category: "---",
-      videoUrl: "https://www.youtube.com/embed/s0kT80JLCfA?si=E6BY2l8svArnFnUx",
-    }   
-  ]);
+  const [workouts, setWorkouts] = useState([]);
+
+  useEffect(() => {
+    const fetchPendingWorkouts = async () => {
+      try {
+        const data = await ApiService.get("/api/workouts/pending");
+        setWorkouts(data.data); // Assuming the API response includes `data`
+      } catch (error) {
+        console.error("Error fetching workouts:", error.message);
+      }
+    };
+
+    fetchPendingWorkouts();
+  }, []);
+
+  const refreshWorkouts = async () => {
+    try {
+      const data = await ApiService.get("/api/workouts/pending");
+      setWorkouts(data.data);
+    } catch (error) {
+      console.error("Error refreshing workouts:", error.message);
+    }
+  };
 
   const handleSort = (order) => {
     setSortOrder(order);
@@ -158,26 +71,59 @@ const Mails = () => {
     setModalVisible(false);
     setCurrentVideoUrl("");
   };
+  
+  const handleApprove = async (id) => {
+    const workoutToApprove = workouts.find((workout) => workout.id === id);
 
-  const handleApprove = (id) => {
-    setWorkouts((prevWorkouts) =>
-      prevWorkouts.filter((workout) => workout.id !== id)
-    );
-  
-    // Reset the isEdited state for all rows
-    setIsEdited((prev) =>
-      Object.keys(prev).reduce((acc, key) => {
-        acc[key] = false; // Reset edit status
-        return acc;
-      }, {})
-    );
+    if (!workoutToApprove) {
+      console.error("Workout not found");
+      return;
+    }
+
+    try {
+      const response = await ApiService.post("/api/workouts/approve", {
+        workout: workoutToApprove,
+      });
+
+      if (response.success) {
+        console.log("Workout approved successfully");
+
+        // Update locally
+        setWorkouts((prevWorkouts) =>
+          prevWorkouts.filter((workout) => workout.id !== id)
+        );
+
+        // Optional refresh to ensure data consistency
+        await refreshWorkouts();
+      } else {
+        console.error("Failed to approve workout");
+      }
+    } catch (error) {
+      console.error("Error approving workout:", error.message);
+    }
   };
-  
-  
-  const handleDecline = (id) => {
-    setWorkouts((prevWorkouts) =>
-      prevWorkouts.filter((workout) => workout.id !== id)
-    );
+
+  const handleDecline = async (id) => {
+    try {
+      // Call API to delete the workout
+      const response = await ApiService.delete(`/api/workouts/pending/${id}`);
+
+      if (response.success) {
+        console.log("Workout declined successfully");
+
+        // Update locally
+        setWorkouts((prevWorkouts) =>
+          prevWorkouts.filter((workout) => workout.id !== id)
+        );
+
+        // Optional refresh to ensure data consistency
+        await refreshWorkouts();
+      } else {
+        console.error("Failed to decline workout:", response.message);
+      }
+    } catch (error) {
+      console.error("Error declining workout:", error.message);
+    }
   };
 
   const handleEdit = (index) => {
@@ -186,13 +132,13 @@ const Mails = () => {
       [index]: workouts[index], // Store the current values for the row being edited
     }));
   };
-  
+
   const handleFieldChange = (index, field, value) => {
     setEditableWorkouts((prev) => ({
       ...prev,
       [index]: { ...prev[index], [field]: value },
     }));
-  
+
     // Check if all required fields are edited
     setIsEdited((prev) => {
       const editedWorkout = {
@@ -206,18 +152,17 @@ const Mails = () => {
         editedWorkout.title !== "---" &&
         editedWorkout.level !== "---" &&
         editedWorkout.category !== "---";
-  
+
       return { ...prev, [index]: allFieldsEdited };
     });
   };
-  
-  
+
   const handleSave = (index) => {
     // Save the edited row to the main workouts array
     const updatedWorkouts = [...workouts];
     updatedWorkouts[index] = editableWorkouts[index];
     setWorkouts(updatedWorkouts);
-  
+
     // Exit edit mode
     setEditableWorkouts((prev) => ({ ...prev, [index]: null }));
     setIsEdited((prev) => ({ ...prev, [index]: true })); // Mark row as edited
@@ -235,7 +180,7 @@ const Mails = () => {
           Sort by Oldest
         </button>
       </div>
-      
+
       <table style={styles.table}>
         <thead>
           <tr>
@@ -275,7 +220,9 @@ const Mails = () => {
                   <input
                     type="text"
                     value={editableWorkouts[index].title}
-                    onChange={(e) => handleFieldChange(index, "title", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange(index, "title", e.target.value)
+                    }
                   />
                 ) : (
                   workout.title
@@ -285,7 +232,9 @@ const Mails = () => {
                 {editableWorkouts[index] ? (
                   <select
                     value={editableWorkouts[index].level}
-                    onChange={(e) => handleFieldChange(index, "level", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange(index, "level", e.target.value)
+                    }
                   >
                     <option value="Select level">Select Level</option>
                     <option value="Easy">Easy</option>
@@ -300,7 +249,9 @@ const Mails = () => {
                 {editableWorkouts[index] ? (
                   <select
                     value={editableWorkouts[index].category}
-                    onChange={(e) => handleFieldChange(index, "category", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange(index, "category", e.target.value)
+                    }
                   >
                     <option value="Select Category">Select Category</option>
                     <option value="Chest">Chest</option>
@@ -321,7 +272,11 @@ const Mails = () => {
               <td style={styles.tableCell}>
                 <button
                   style={styles.editButton}
-                  onClick={() => (editableWorkouts[index] ? handleSave(index) : handleEdit(index))}
+                  onClick={() =>
+                    editableWorkouts[index]
+                      ? handleSave(index)
+                      : handleEdit(index)
+                  }
                 >
                   {editableWorkouts[index] ? "Save" : "Edit"}
                 </button>
@@ -388,9 +343,9 @@ const styles = {
     backgroundColor: "#fff",
     borderRadius: "10px",
     boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
-    overflow: "auto",    
-    scrollbarWidth: "thin",  
-    scrollbarColor: "#888 #ccc", 
+    overflow: "auto",
+    scrollbarWidth: "thin",
+    scrollbarColor: "#888 #ccc",
   },
   sectionTitle: {
     fontSize: "24px",
@@ -400,8 +355,8 @@ const styles = {
   sortingControls: {
     marginBottom: "15px",
     display: "flex", // Flexbox to align buttons side by side
-    justifyContent: "flex-start",  // Align buttons to the left
-    gap: "10px",  // Adds space between the buttons
+    justifyContent: "flex-start", // Align buttons to the left
+    gap: "10px", // Adds space between the buttons
   },
   table: {
     width: "100%",
@@ -448,8 +403,8 @@ const styles = {
     color: "black",
     border: "none",
     cursor: "pointer",
-    width: "70px", 
-    marginRight: "10px", 
+    width: "70px",
+    marginRight: "10px",
   },
   approveButton: {
     padding: "5px 10px",
@@ -457,8 +412,8 @@ const styles = {
     color: "black",
     border: "none",
     cursor: "pointer",
-    width: "70px", 
-    marginRight: "10px", 
+    width: "70px",
+    marginRight: "10px",
   },
   declineButton: {
     padding: "5px 10px",
