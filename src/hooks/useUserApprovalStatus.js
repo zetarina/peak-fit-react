@@ -10,13 +10,8 @@ const useUserApprovalStatus = () => {
 
   useEffect(() => {
     const fetchAndListenUserData = async () => {
-      console.log("Starting fetchAndListenUserData...");
-
       try {
-        // Step 1: Validate user and get UID
-        console.log("Calling /auth/validate to get UID...");
         const { uid } = await ApiService.safeGet("/auth/validate");
-        console.log("UID fetched:", uid);
 
         if (!uid) {
           throw new Error("UID not found. Redirecting to login.");
@@ -24,15 +19,10 @@ const useUserApprovalStatus = () => {
 
         // Step 2: Construct Firebase path
         const path = `business-users/${uid}/isApproveUser`;
-        console.log("Firebase path constructed:", path);
 
         // Step 3: Listen to approval status in Firebase
-        console.log("Setting up Firebase listener...");
         const unsubscribe = FirebaseService.listenToUserData(path, (data) => {
-          console.log("Firebase listener triggered. Data received:", data);
-
           if (data === null) {
-            console.error("Account not found in Firebase. Redirecting to login.");
             handleLogout();
             return;
           }
@@ -44,7 +34,6 @@ const useUserApprovalStatus = () => {
 
         // Step 5: Cleanup listener on unmount
         return () => {
-          console.log("Cleaning up Firebase listener...");
           unsubscribe();
         };
       } catch (error) {
@@ -54,10 +43,9 @@ const useUserApprovalStatus = () => {
     };
 
     const handleLogout = () => {
-      console.log("Logging out user. Clearing tokens...");
       localStorage.removeItem("authToken");
       sessionStorage.removeItem("authToken");
-      console.log("Redirecting to login...");
+
       navigate("/login");
     };
 

@@ -1,102 +1,64 @@
 import React, { useState, useEffect } from "react";
+import { AgGridReact } from "ag-grid-react";
+import {
+  ClientSideRowModelModule,
+  PaginationModule,
+  RowSelectionModule,
+  TextFilterModule,
+  TextEditorModule,
+  ValidationModule,
+} from "ag-grid-community";
+import "ag-grid-community/styles/ag-theme-alpine.css"; // Theme CSS
 import ApiService from "@/services/ApiService";
-// Workout Page Component
+import getYouTubeThumbnailUrl from "../../utils/youtube";
 const Mails = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortOrder, setSortOrder] = useState("oldest"); // State for sorting order
-  const workoutsPerPage = 10;
-  const [modalVisible, setModalVisible] = useState(false);
-  const [currentVideoUrl, setCurrentVideoUrl] = useState("");
+  const [rowData, setRowData] = useState([]);
+  const [editableData, setEditableData] = useState({}); // Tracks changes
 
-  // State to track edits
-  const [editableWorkouts, setEditableWorkouts] = useState({});
-  const [isEdited, setIsEdited] = useState({});
-  // Initial Workouts Data
-  const [workouts, setWorkouts] = useState([]);
-
-  useEffect(() => {
-    const fetchPendingWorkouts = async () => {
-      try {
-        const data = await ApiService.get("/workouts/pending");
-        setWorkouts(data.data); // Assuming the API response includes `data`
-      } catch (error) {
-        console.error("Error fetching workouts:", error.message);
-      }
-    };
-
-    fetchPendingWorkouts();
-  }, []);
-
-  const refreshWorkouts = async () => {
-    try {
-      const data = await ApiService.get("/workouts/pending");
-      setWorkouts(data.data);
-    } catch (error) {
-      console.error("Error refreshing workouts:", error.message);
-    }
-  };
-
-  const handleSort = (order) => {
-    setSortOrder(order);
-    setCurrentPage(1); // Reset to the first page when sorting changes
-  };
-
-  // Derive workouts to display with sorting applied
-  const sortedWorkouts = [...workouts].sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-  });
-
-  // Apply pagination after sorting
-  const startIndex = (currentPage - 1) * workoutsPerPage;
-  const endIndex = startIndex + workoutsPerPage;
-  const currentWorkouts = sortedWorkouts.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(workouts.length / workoutsPerPage);
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
-
-  const handleThumbnailClick = (videoUrl) => {
-    setCurrentVideoUrl(videoUrl);
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setCurrentVideoUrl("");
+  const handleFieldChange = (id, field, value) => {
+    setEditableData((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value,
+      },
+    }));
   };
 
   const handleApprove = async (id) => {
-    const workoutToApprove = workouts.find((workout) => workout.id === id);
+    const updatedWorkout =
+      editableData[id] || rowData.find((row) => row.id === id);
+    console.log(updatedWorkout);
+    console.log(editableData[id]);
 
-    if (!workoutToApprove) {
-      console.error("Workout not found");
-      return;
-    }
-
+    if (!updatedWorkout) return;
+    const workout = {
+      id,
+      level:
+        editableData[id].level || rowData.find((row) => row.id === id).level,
+      type: editableData[id].type || rowData.find((row) => row.id === id).type,
+      title:
+        editableData[id].title ||
+        rowData.find((row) => row.id === id)["content-name"],
+      videoUrl: rowData.find((row) => row.id === id)["content-url"],
+      thumbnailUrl: getYouTubeThumbnailUrl(
+        rowData.find((row) => row.id === id)["content-url"]
+      ),
+    };
+    console.log(workout);
     try {
-      const response = await ApiService.post("/workouts/approve", {
-        workout: workoutToApprove,
-      });
-
+      const response = await ApiService.post(`/workouts/approve`, { workout });
+      console.log(response);
       if (response.success) {
+        setRowData((prev) => prev.filter((workout) => workout.id !== id));
+        setEditableData((prev) => {
+          const newEditableData = { ...prev };
+          delete newEditableData[id];
+          return newEditableData;
+        });
         console.log("Workout approved successfully");
-
-        // Update locally
-        setWorkouts((prevWorkouts) =>
-          prevWorkouts.filter((workout) => workout.id !== id)
-        );
-
-        // Optional refresh to ensure data consistency
-        await refreshWorkouts();
       } else {
-        console.error("Failed to approve workout");
+        console.error("Failed to approve workout:", response.message);
       }
     } catch (error) {
       console.error("Error approving workout:", error.message);
@@ -105,19 +67,16 @@ const Mails = () => {
 
   const handleDecline = async (id) => {
     try {
-      // Call API to delete the workout
       const response = await ApiService.delete(`/workouts/pending/${id}`);
 
       if (response.success) {
+        setRowData((prev) => prev.filter((workout) => workout.id !== id));
+        setEditableData((prev) => {
+          const newEditableData = { ...prev };
+          delete newEditableData[id];
+          return newEditableData;
+        });
         console.log("Workout declined successfully");
-
-        // Update locally
-        setWorkouts((prevWorkouts) =>
-          prevWorkouts.filter((workout) => workout.id !== id)
-        );
-
-        // Optional refresh to ensure data consistency
-        await refreshWorkouts();
       } else {
         console.error("Failed to decline workout:", response.message);
       }
@@ -126,212 +85,170 @@ const Mails = () => {
     }
   };
 
-  const handleEdit = (index) => {
-    setEditableWorkouts((prev) => ({
-      ...prev,
-      [index]: workouts[index], // Store the current values for the row being edited
-    }));
-  };
+  const columnDefs = [
+    { headerName: "ID", field: "id", sortable: true, filter: true, flex: 1 },
+    {
+      headerName: "Title",
+      field: "title",
+      cellRenderer: (params) => (
+        <input
+          type="text"
+          value={editableData[params.data.id]?.title || params.value}
+          onChange={(e) =>
+            handleFieldChange(params.data.id, "title", e.target.value)
+          }
+          style={styles.input}
+        />
+      ),
+      flex: 2,
+    },
+    {
+      headerName: "Video",
+      field: "videoUrl",
+      cellRenderer: (params) => {
+        if (params.value) {
+          const thumbnailUrl = getYouTubeThumbnailUrl(params.value);
+          return (
+            <a href={params.value} target="_blank" rel="noopener noreferrer">
+              <img
+                src={thumbnailUrl}
+                alt="YouTube Thumbnail"
+                style={{ width: "100px", height: "auto", cursor: "pointer" }}
+              />
+            </a>
+          );
+        }
+        return "No Video";
+      },
+      flex: 2,
+    },
 
-  const handleFieldChange = (index, field, value) => {
-    setEditableWorkouts((prev) => ({
-      ...prev,
-      [index]: { ...prev[index], [field]: value },
-    }));
+    {
+      headerName: "Level",
+      field: "level",
+      cellRenderer: (params) => (
+        <select
+          value={editableData[params.data.id]?.level || params.value}
+          onChange={(e) =>
+            handleFieldChange(params.data.id, "level", e.target.value)
+          }
+          style={styles.select}
+        >
+          <option value="Select Level">Select Level</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      ),
+      flex: 1,
+    },
+    {
+      headerName: "Type",
+      field: "type",
+      cellRenderer: (params) => (
+        <select
+          value={editableData[params.data.id]?.type || params.value}
+          onChange={(e) =>
+            handleFieldChange(params.data.id, "type", e.target.value)
+          }
+          style={styles.select}
+        >
+          <option value="Select Category">Select Category</option>
+          <option value="Chest">Chest</option>
+          <option value="Back">Back</option>
+          <option value="Biceps">Biceps</option>
+          <option value="Triceps">Triceps</option>
+          <option value="Shoulders">Shoulders</option>
+          <option value="Core">Core</option>
+          <option value="Legs">Legs</option>
+          <option value="Glutes">Glutes</option>
+          <option value="Cardio">Cardio</option>
+        </select>
+      ),
+      flex: 1,
+    },
+    {
+      headerName: "Actions",
+      field: "id",
+      cellRenderer: (params) => {
+        const data = params.data;
+        const editableEntry = editableData[data.id] || data;
 
-    // Check if all required fields are edited
-    setIsEdited((prev) => {
-      const editedWorkout = {
-        ...editableWorkouts[index],
-        [field]: value,
-      };
-      const allFieldsEdited =
-        editedWorkout.title &&
-        editedWorkout.level &&
-        editedWorkout.category &&
-        editedWorkout.title !== "---" &&
-        editedWorkout.level !== "---" &&
-        editedWorkout.category !== "---";
+        // Check if level or type is not selected
+        const isDisabled =
+          editableEntry.level === "Select Level" ||
+          editableEntry.type === "Select Category" ||
+          !editableEntry.level ||
+          !editableEntry.type;
 
-      return { ...prev, [index]: allFieldsEdited };
-    });
-  };
+        return (
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              style={{
+                ...styles.approveButton,
+                opacity: isDisabled ? 0.6 : 1,
+                cursor: isDisabled ? "not-allowed" : "pointer",
+              }}
+              onClick={() => handleApprove(params.value)}
+              disabled={isDisabled}
+            >
+              Approve
+            </button>
+            <button
+              style={styles.declineButton}
+              onClick={() => handleDecline(params.value)}
+            >
+              Decline
+            </button>
+          </div>
+        );
+      },
+      flex: 2,
+    },
+  ];
 
-  const handleSave = (index) => {
-    // Save the edited row to the main workouts array
-    const updatedWorkouts = [...workouts];
-    updatedWorkouts[index] = editableWorkouts[index];
-    setWorkouts(updatedWorkouts);
+  useEffect(() => {
+    const fetchPendingWorkouts = async () => {
+      try {
+        const response = await ApiService.get("/workouts/pending");
+        const normalizedData = response.data.map((workout) => ({
+          ...workout,
+          title: workout["content-name"] || workout.title,
+          videoUrl: workout["content-url"] || workout.videoUrl,
+        }));
+        setRowData(normalizedData);
+      } catch (error) {
+        console.error("Error fetching workouts:", error.message);
+      }
+    };
 
-    // Exit edit mode
-    setEditableWorkouts((prev) => ({ ...prev, [index]: null }));
-    setIsEdited((prev) => ({ ...prev, [index]: true })); // Mark row as edited
-  };
+    fetchPendingWorkouts();
+  }, []);
 
   return (
     <section style={styles.section}>
       <h3 style={styles.sectionTitle}>All Mails</h3>
-
-      <div style={styles.sortingControls}>
-        <button style={styles.sortButton} onClick={() => handleSort("newest")}>
-          Sort by Newest
-        </button>
-        <button style={styles.sortButton} onClick={() => handleSort("oldest")}>
-          Sort by Oldest
-        </button>
+      <div
+        className="ag-theme-alpine"
+        style={{ height: "600px", width: "100%" }}
+      >
+        <AgGridReact
+          rowData={rowData}
+          columnDefs={columnDefs}
+          pagination={true}
+          paginationPageSize={10}
+          modules={[
+            ClientSideRowModelModule,
+            PaginationModule,
+            RowSelectionModule,
+            TextFilterModule,
+            TextEditorModule,
+            ValidationModule,
+          ]}
+          animateRows={true}
+          rowSelection="single"
+        />
       </div>
-
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th style={styles.tableHeader}>S/N</th>
-            <th style={styles.tableHeader}>Video</th>
-            <th style={styles.tableHeader}>Title</th>
-            <th style={styles.tableHeader}>Level</th>
-            <th style={styles.tableHeader}>Type</th>
-            <th style={styles.tableHeader}>Date</th>
-            <th style={styles.tableHeader}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentWorkouts.map((workout, index) => (
-            <tr key={index} style={styles.tableRow}>
-              <td style={styles.tableCell}>{workout.id}</td>
-              <td style={styles.tableCell}>
-                <div style={styles.thumbnailContainer}>
-                  <img
-                    src={workout.thumbnail}
-                    alt={workout.title}
-                    style={styles.thumbnail}
-                    onClick={() => handleThumbnailClick(workout.videoUrl)}
-                  />
-                  <div
-                    style={styles.playButton}
-                    onClick={() => handleThumbnailClick(workout.videoUrl)}
-                  >
-                    ▶
-                  </div>
-                </div>
-              </td>
-
-              {/* Editable Title */}
-              <td style={styles.tableCell}>
-                {editableWorkouts[index] ? (
-                  <input
-                    type="text"
-                    value={editableWorkouts[index].title}
-                    onChange={(e) =>
-                      handleFieldChange(index, "title", e.target.value)
-                    }
-                  />
-                ) : (
-                  workout.title
-                )}
-              </td>
-              <td style={styles.tableCell}>
-                {editableWorkouts[index] ? (
-                  <select
-                    value={editableWorkouts[index].level}
-                    onChange={(e) =>
-                      handleFieldChange(index, "level", e.target.value)
-                    }
-                  >
-                    <option value="Select level">Select Level</option>
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                  </select>
-                ) : (
-                  workout.level
-                )}
-              </td>
-              <td style={styles.tableCell}>
-                {editableWorkouts[index] ? (
-                  <select
-                    value={editableWorkouts[index].category}
-                    onChange={(e) =>
-                      handleFieldChange(index, "category", e.target.value)
-                    }
-                  >
-                    <option value="Select Category">Select Category</option>
-                    <option value="Chest">Chest</option>
-                    <option value="Back">Back</option>
-                    <option value="Biceps">Biceps</option>
-                    <option value="Triceps">Triceps</option>
-                    <option value="Shoulders">Shoulders</option>
-                    <option value="Core">Core</option>
-                    <option value="Legs">Legs</option>
-                    <option value="Glutes">Glutes</option>
-                    <option value="Cardio">Cardio</option>
-                  </select>
-                ) : (
-                  workout.category
-                )}
-              </td>
-              <td style={styles.tableCell}>{workout.date}</td>
-              <td style={styles.tableCell}>
-                <button
-                  style={styles.editButton}
-                  onClick={() =>
-                    editableWorkouts[index]
-                      ? handleSave(index)
-                      : handleEdit(index)
-                  }
-                >
-                  {editableWorkouts[index] ? "Save" : "Edit"}
-                </button>
-                <button
-                  style={{
-                    ...styles.approveButton,
-                    cursor: isEdited[index] ? "pointer" : "not-allowed", // Change cursor style
-                  }}
-                  disabled={!isEdited[index]} // Disable until all fields are edited
-                  onClick={() => handleApprove(workout.id)}
-                >
-                  Approve
-                </button>
-                <button
-                  style={styles.declineButton}
-                  onClick={() => handleDecline(workout.id)}
-                >
-                  Decline
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div style={styles.pagination}>
-        <button onClick={handlePrevPage} disabled={currentPage === 1}>
-          Previous
-        </button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <button onClick={handleNextPage} disabled={currentPage === totalPages}>
-          Next
-        </button>
-      </div>
-
-      {modalVisible && (
-        <div style={styles.modalOverlay} onClick={closeModal}>
-          <div style={styles.modalContent}>
-            <iframe
-              width="560"
-              height="315"
-              src={currentVideoUrl}
-              title="Workout Video"
-              frameBorder="0"
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            ></iframe>
-            <button onClick={closeModal} style={styles.closeModalButton}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </section>
   );
 };
@@ -343,123 +260,33 @@ const styles = {
     backgroundColor: "#fff",
     borderRadius: "10px",
     boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
-    overflow: "auto",
-    scrollbarWidth: "thin",
-    scrollbarColor: "#888 #ccc",
   },
   sectionTitle: {
     fontSize: "24px",
     fontWeight: "bold",
     marginBottom: "15px",
   },
-  sortingControls: {
-    marginBottom: "15px",
-    display: "flex", // Flexbox to align buttons side by side
-    justifyContent: "flex-start", // Align buttons to the left
-    gap: "10px", // Adds space between the buttons
-  },
-  table: {
+  input: {
     width: "100%",
-    borderCollapse: "collapse",
+    padding: "5px",
   },
-  tableHeader: {
-    backgroundColor: "#f1f1f1",
-    padding: "12px",
-    textAlign: "left",
-    fontWeight: "bold",
-  },
-  tableRow: {
-    borderBottom: "1px solid #ddd",
-  },
-  tableCell: {
-    padding: "10px",
-    verticalAlign: "middle",
-  },
-  thumbnailContainer: {
-    position: "relative",
-    display: "inline-block",
-  },
-  thumbnail: {
-    width: "100px",
-    height: "auto",
-    cursor: "pointer",
-  },
-  playButton: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    zIndex: 1,
-    background: "rgba(0, 0, 0, 0.5)",
-    color: "#fff",
-    borderRadius: "50%",
-    padding: "10px",
-    cursor: "pointer",
-    pointerEvents: "none",
-  },
-  editButton: {
-    padding: "5px 10px",
-    backgroundColor: "#e0e0e0",
-    color: "black",
-    border: "none",
-    cursor: "pointer",
-    width: "70px",
-    marginRight: "10px",
+  select: {
+    width: "100%",
+    padding: "5px",
   },
   approveButton: {
     padding: "5px 10px",
-    backgroundColor: "#AFE1AF",
-    color: "black",
+    backgroundColor: "#4caf50",
+    color: "#fff",
     border: "none",
     cursor: "pointer",
-    width: "70px",
-    marginRight: "10px",
   },
   declineButton: {
     padding: "5px 10px",
     backgroundColor: "#e57373",
-    color: "black",
+    color: "#fff",
     border: "none",
     cursor: "pointer",
-    width: "70px",
-  },
-  pagination: {
-    marginTop: "20px",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: "10px",
-  },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  modalContent: {
-    position: "relative",
-    backgroundColor: "white",
-    padding: "20px",
-    width: "80%",
-    maxWidth: "560px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-  },
-  closeModalButton: {
-    backgroundColor: "black",
-    color: "white",
-    border: "none",
-    padding: "10px",
-    cursor: "pointer",
-    marginTop: "20px",
-    alignSelf: "center",
   },
 };
 

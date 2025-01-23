@@ -83,6 +83,7 @@ class ApiService {
    */
   static async safeGet(endpoint) {
     const token = this.getAuthToken();
+
     if (!token) throw new Error("Unauthorized: No token found.");
 
     const response = await fetch(`${this.baseURL}${endpoint}`, {
