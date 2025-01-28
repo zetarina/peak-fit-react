@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useUser } from "@/contexts/UserContext"; // Import UserContext
 import profile from "@/images/profile.png";
 import upload from "@/images/upload.png";
 import bin from "@/images/bin.png";
@@ -10,150 +11,120 @@ import Input from "@/components/Input";
 import ProfilePictureUploader from "@/components/ProfilePictureUploader";
 
 const Profile = () => {
+  const { user, loading: userLoading, refetchUser } = useUser(); // Use UserContext
   const [isEditing, setIsEditing] = useState(false);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
+    username: user?.username || "",
+    email: user?.email || "",
     password: "",
     confirmPassword: "",
   });
-  const [certifications, setCertifications] = useState([]);
-  const [profileImage, setProfileImage] = useState(profile);
-  useEffect(() => {
-    const fetchUserData = async () => {
-      setLoading(true);
-      try {
-        const response = await ApiService.safeGet("/me/my-account");
-        console.log(response);
-        setUserData(response.user);
-        setFormData({
-          username: response.user.username || "",
-          email: response.user.email || "",
-          password: "",
-          confirmPassword: "",
-        });
-        setProfileImage(response.user.profileImage || profile);
-        setCertifications(response.user.businessCertification || []);
-      } catch (err) {
-        toast.error("Failed to fetch user data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [localLoading, setLocalLoading] = useState(false); // Local loading for specific actions
+  const [certifications, setCertifications] = useState(
+    user?.businessCertification || []
+  );
+  const [profileImage, setProfileImage] = useState(user?.profileImage || profile);
 
-    fetchUserData();
-  }, []);
-
+  // Handle Edit Toggle
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
     if (!isEditing) {
       setFormData({
-        username: userData?.username || "",
-        email: userData?.email || "",
+        username: user?.username || "",
+        email: user?.email || "",
         password: "",
         confirmPassword: "",
       });
     }
   };
 
+  // Handle File Upload
   const handleFileChange = async (event) => {
     const input = event.target;
     const files = Array.from(input.files);
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
 
-    setLoading(true);
+    setLocalLoading(true);
     try {
       const response = await ApiService.safePostMultipart(
         "/me/upload-certifications",
         formData
       );
-
       if (response.certifications) {
         setCertifications(response.certifications);
         toast.success("Certifications uploaded successfully.");
+        refetchUser(); // Refresh user data
       } else {
         toast.error("Failed to upload certifications.");
       }
-
-      input.value = "";
+      input.value = ""; // Reset file input
     } catch (err) {
       toast.error("Failed to upload certifications. Please try again.");
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
+  // Handle Certification Deletion
   const handleDeleteCertification = async (certification) => {
-    setLoading(true);
+    setLocalLoading(true);
     try {
       const response = await ApiService.safePut("/me/delete-certification", {
         data: { certification },
       });
-
       if (response.certifications) {
         setCertifications(response.certifications);
         toast.success("Certification deleted successfully.");
+        refetchUser(); // Refresh user data
       } else {
-        toast.error("Failed to delete certification. No certifications found.");
+        toast.error("Failed to delete certification.");
       }
     } catch (err) {
       toast.error("Failed to delete certification.");
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
+
+  // Handle Profile Picture Change
   const handleProfilePictureChange = async (event) => {
-    const file = event.target.files?.[0]; // Safely access the first file
-    console.log(file);
+    const file = event.target.files?.[0];
     if (!file) {
       toast.error("No file selected. Please choose a file to upload.");
-      return;
-    }
-
-    // Ensure the file type is valid (optional)
-    if (!["image/png", "image/jpeg"].includes(file.type)) {
-      toast.error("Invalid file type. Only PNG and JPEG are allowed.");
       return;
     }
 
     const formData = new FormData();
     formData.append("profilePicture", file);
 
-    setLoading(true);
+    setLocalLoading(true);
     try {
       const response = await ApiService.safePostMultipart(
         "/me/upload-profile-picture",
         formData
       );
-      console.log(response);
       if (response.user) {
-        setFormData({
-          username: response.user.username || "",
-          email: response.user.email || "",
-          password: "",
-          confirmPassword: "",
-        });
         setProfileImage(response.user.profileImage || profile);
-        setCertifications(response.user.businessCertification || []);
         toast.success("Profile picture updated successfully!");
+        refetchUser(); // Refresh user data
       } else {
         toast.error("Failed to update profile picture.");
       }
     } catch (err) {
       toast.error("Error uploading profile picture. Please try again.");
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
+  // Handle Form Input Change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle Form Submission
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -161,128 +132,128 @@ const Profile = () => {
       return;
     }
 
-    setLoading(true);
+    setLocalLoading(true);
     try {
-      const response = await ApiService.safePut("/me/update-profile", {
+      await ApiService.safePut("/me/update-profile", {
         username: formData.username,
         email: formData.email,
         password: formData.password,
       });
-
-      setUserData(response.user);
-      setIsEditing(false);
       toast.success("Profile updated successfully.");
+      refetchUser(); // Refresh user data
+      setIsEditing(false);
     } catch (err) {
       toast.error("Failed to update profile. Please try again.");
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
-  return (
-    <>
-      <div style={styles.container}>
-        <LoadingOverlay isLoading={loading} message="Loading..." />
-        <h1 style={styles.title}>My Profile</h1>
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>Personal Information</h2>
-          <form onSubmit={handleFormSubmit} style={styles.form}>
-            <div style={styles.personalInfoContainer}>
-              <ProfilePictureUploader
-                currentImage={profileImage ? profileImage : profile}
-                onFileChange={handleProfilePictureChange}
-              />
+  if (userLoading || localLoading) {
+    return <LoadingOverlay isLoading={true} message="Loading..." />;
+  }
 
-              <div style={styles.fieldGroup}>
-                <div style={styles.fieldRow}>
-                  <Input
-                    label="Username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                  <Input
-                    label="Email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    disabled
-                  />
-                </div>
-                <div style={styles.fieldRow}>
-                  <PasswordInput
-                    label="Password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                  <PasswordInput
-                    label="Confirm Password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.title}>My Profile</h1>
+      <section style={styles.section}>
+        <h2 style={styles.sectionTitle}>Personal Information</h2>
+        <form onSubmit={handleFormSubmit} style={styles.form}>
+          <div style={styles.personalInfoContainer}>
+            <ProfilePictureUploader
+              currentImage={profileImage}
+              onFileChange={handleProfilePictureChange}
+            />
+            <div style={styles.fieldGroup}>
+              <div style={styles.fieldRow}>
+                <Input
+                  label="Username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                />
+                <Input
+                  label="Email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  disabled
+                />
+              </div>
+              <div style={styles.fieldRow}>
+                <PasswordInput
+                  label="Password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                />
+                <PasswordInput
+                  label="Confirm Password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                />
               </div>
             </div>
-            <div style={styles.btnBox}>
-              <button
-                type="button"
-                style={styles.editButton}
-                onClick={handleEditToggle}
-              >
-                {isEditing ? "Cancel" : "Edit"}
-              </button>
-              {isEditing && (
-                <button type="submit" style={styles.saveButton}>
-                  Save
-                </button>
-              )}
-            </div>
-          </form>
-        </section>
-        <section style={styles.section}>
-          <h3 style={styles.subTitle}>
-            Business Certifications
-            <label htmlFor="file-upload" style={styles.uploadIcon}>
-              <img src={upload} alt="Upload" style={styles.uploadImage} />
-            </label>
-          </h3>
-          <input
-            id="file-upload"
-            type="file"
-            style={styles.fileInput}
-            multiple
-            onChange={handleFileChange}
-          />
-          <div style={styles.certificationContainer}>
-            {certifications?.map((certification, index) => (
-              <div key={index} style={styles.certificationItem}>
-                <a
-                  href={certification}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.certificationLink}
-                >
-                  View Certification
-                </a>
-                <button
-                  onClick={() => handleDeleteCertification(certification)}
-                  style={styles.deleteButton}
-                >
-                  <img src={bin} alt="Delete" style={styles.binImage} />
-                </button>
-              </div>
-            ))}
           </div>
-        </section>
-      </div>
-    </>
+          <div style={styles.btnBox}>
+            <button
+              type="button"
+              style={styles.editButton}
+              onClick={handleEditToggle}
+            >
+              {isEditing ? "Cancel" : "Edit"}
+            </button>
+            {isEditing && (
+              <button type="submit" style={styles.saveButton}>
+                Save
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+      <section style={styles.section}>
+        <h3 style={styles.subTitle}>
+          Business Certifications
+          <label htmlFor="file-upload" style={styles.uploadIcon}>
+            <img src={upload} alt="Upload" style={styles.uploadImage} />
+          </label>
+        </h3>
+        <input
+          id="file-upload"
+          type="file"
+          style={styles.fileInput}
+          multiple
+          onChange={handleFileChange}
+        />
+        <div style={styles.certificationContainer}>
+          {certifications?.map((certification, index) => (
+            <div key={index} style={styles.certificationItem}>
+              <a
+                href={certification}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.certificationLink}
+              >
+                View Certification
+              </a>
+              <button
+                onClick={() => handleDeleteCertification(certification)}
+                style={styles.deleteButton}
+              >
+                <img src={bin} alt="Delete" style={styles.binImage} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 };
+
 
 const styles = {
   container: {

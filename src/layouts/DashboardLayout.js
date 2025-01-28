@@ -1,8 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-
-import useUserApprovalStatus from "@/hooks/useUserApprovalStatus";
+import { useUser } from "../contexts/UserContext";
 import home from "@/images/home.png";
 import user from "@/images/user.png";
 import mail from "@/images/mail.png";
@@ -23,29 +22,31 @@ const sidebarItems = [
 ];
 
 const DashboardLayout = () => {
-  const { isApproved, loading } = useUserApprovalStatus();
+  const { user, loading } = useUser(); // Get user data and user loading state from context
   const navigate = useNavigate();
+
   const handleLogout = () => {
     localStorage.removeItem("authToken");
     sessionStorage.removeItem("authToken");
     navigate("/login");
   };
 
+  // If user data is still loading, show the loading screen
   if (loading) {
     return (
       <div style={styles.fullPageContainer}>
-        <h1>Loading...</h1>
+        <h1>Loading your data...</h1>
       </div>
     );
   }
 
-  if (!isApproved) {
+  // If the user is not approved, show the "under review" message
+  if (!user?.isApproveUser) {
     return (
       <div style={styles.fullPageContainer}>
-        <h1>Verifying Your Profile...</h1>
+        <h1>Your profile is under review.</h1>
         <p>
-          Your account is under review. Once approved, you'll be able to access
-          the dashboard.
+          Once your account is approved, you'll be able to access the dashboard.
         </p>
       </div>
     );

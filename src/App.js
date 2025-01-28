@@ -20,6 +20,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import VerifyWithLink from "./pages/Verify";
 import NotFoundPage from "./pages/NotFoundPage";
+
 const App = () => {
   return (
     <Routes>

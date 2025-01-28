@@ -39,18 +39,18 @@ const Login = () => {
         );
       }
 
-      const { authToken, user } = await ApiService.post("/auth/login", {
+      const response = await ApiService.post("/auth/login", {
         token: firebaseToken,
       });
-
-      if (!authToken) {
+      console.log(response);
+      if (!response.authToken) {
         throw new Error("Failed to retrieve session token. Please try again.");
       }
 
       if (rememberMe) {
-        localStorage.setItem("authToken", authToken);
+        localStorage.setItem("authToken", response.authToken);
       } else {
-        sessionStorage.setItem("authToken", authToken);
+        sessionStorage.setItem("authToken",response.authToken);
       }
       toast.success("Login successful!");
       navigate("/dashboard");
@@ -172,8 +172,6 @@ const Login = () => {
     </div>
   );
 };
-
-
 
 const styles = {
   container: {

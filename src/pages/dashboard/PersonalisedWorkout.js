@@ -6,7 +6,7 @@ import {
   RowSelectionModule,
   TextFilterModule,
 } from "ag-grid-community";
-import "ag-grid-community/styles/ag-theme-alpine.css"; // Theme CSS
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import SingleModalComponent from "../../components/SingleModalComponent";
 import ApiService from "@/services/ApiService";
 import getYouTubeThumbnailUrl from "../../utils/youtube";
@@ -31,6 +31,36 @@ const PersonalisedWorkoutPage = () => {
     thumbnail: "",
     videoUrl: "",
   });
+  const [gridApi, setGridApi] = useState(null);
+  const [filters, setFilters] = useState({
+    goal: "",
+    level: "",
+    limitations: "",
+  });
+  const isExternalFilterPresent = () => {
+    return !!(filters.goal || filters.level || filters.limitations);
+  };
+
+  const doesExternalFilterPass = (node) => {
+    const { goal, level, limitations } = filters;
+    const { data } = node;
+
+    const passesGoal = !goal || data.goal === goal;
+    const passesLevel = !level || data.level === level;
+    const passesLimitations = !limitations || data.limitations === limitations;
+
+    return passesGoal && passesLevel && passesLimitations;
+  };
+
+  const onGridReady = (params) => {
+    setGridApi(params.api);
+  };
+
+  useEffect(() => {
+    if (gridApi) {
+      gridApi.onFilterChanged();
+    }
+  }, [filters]);
 
   useEffect(() => {
     fetchWorkouts();
@@ -39,8 +69,8 @@ const PersonalisedWorkoutPage = () => {
   const fetchWorkouts = async () => {
     try {
       const responase = await ApiService.safeGet("/personalized-workout");
-      console.log(responase.data); // Check the data structure in the console
-      setRowData(responase.data); // Make sure the state is updated with correct data
+      console.log(responase.data);
+      setRowData(responase.data);
     } catch (error) {
       console.error("Error fetching workouts:", error);
       toast.error("Failed to fetch workouts");
@@ -51,25 +81,22 @@ const PersonalisedWorkoutPage = () => {
   const saveWorkout = async () => {
     try {
       setLoading(true);
-      // Ensure the thumbnail is properly set before saving
+
       const workoutToSave = {
         ...newWorkout,
         thumbnail:
-          newWorkout.thumbnail || getYouTubeThumbnailUrl(newWorkout.videoUrl), // Fallback to generating thumbnail from video URL
+          newWorkout.thumbnail || getYouTubeThumbnailUrl(newWorkout.videoUrl),
       };
 
       if (newWorkout.id) {
-        // Update existing workout
         await ApiService.safePut(
           `/personalized-workout/${newWorkout.id}`,
           workoutToSave
         );
       } else {
-        // Create new workout
         await ApiService.safePost("/personalized-workout", workoutToSave);
       }
 
-      // Refresh the workouts list
       fetchWorkouts();
       setEditModalOpen(false);
       resetNewWorkout();
@@ -91,7 +118,6 @@ const PersonalisedWorkoutPage = () => {
         return;
       }
 
-      // Delete the workout from the API
       await ApiService.safeDelete(`/personalized-workout/${id}`);
 
       fetchWorkouts();
@@ -122,8 +148,6 @@ const PersonalisedWorkoutPage = () => {
     {
       headerName: "Thumbnail",
       field: "thumbnail",
-      sortable: true,
-      filter: true,
       cellRenderer: (params) => {
         const thumbnailUrl = getYouTubeThumbnailUrl(params.data.videoUrl);
         return (
@@ -137,13 +161,106 @@ const PersonalisedWorkoutPage = () => {
     },
     { headerName: "Title", field: "title", sortable: true, filter: true },
     { headerName: "Duration", field: "duration", sortable: true, filter: true },
-    { headerName: "Goal", field: "goal", sortable: true, filter: true },
-    { headerName: "Level", field: "level", sortable: true, filter: true },
+    {
+      headerName: "Goal",
+      field: "goal",
+      sortable: true,
+      filter: true,
+      headerComponent: (params) => {
+        const handleFilterChange = (e) => {
+          setFilters((prev) => ({ ...prev, goal: e.target.value }));
+        };
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontWeight: "bold" }}>{params.displayName}</span>
+            <select
+              onChange={handleFilterChange}
+              value={filters.goal}
+              style={{
+                padding: "5px",
+                fontSize: "12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">All Goals</option>
+              <option value="Build Muscle">Build Muscle</option>
+              <option value="Lose Weight">Lose Weight</option>
+              <option value="Endurance/Get Healthy">
+                Endurance/Get Healthy
+              </option>
+            </select>
+          </div>
+        );
+      },
+    },
+    {
+      headerName: "Level",
+      field: "level",
+      sortable: true,
+      filter: true,
+      headerComponent: (params) => {
+        const handleFilterChange = (e) => {
+          setFilters((prev) => ({ ...prev, level: e.target.value }));
+        };
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontWeight: "bold" }}>{params.displayName}</span>
+            <select
+              onChange={handleFilterChange}
+              value={filters.level}
+              style={{
+                padding: "5px",
+                fontSize: "12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">All Level</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+        );
+      },
+    },
     {
       headerName: "Limitations",
       field: "limitations",
       sortable: true,
       filter: true,
+      headerComponent: (params) => {
+        const handleFilterChange = (e) => {
+          setFilters((prev) => ({ ...prev, limitations: e.target.value }));
+        };
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontWeight: "bold" }}>{params.displayName}</span>
+            <select
+              onChange={handleFilterChange}
+              value={filters.limitations}
+              style={{
+                padding: "5px",
+                fontSize: "12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">All Limitations</option>
+              <option value="Sensitive Back">Sensitive Back</option>
+              <option value="Sensitive Knees">Sensitive Knees</option>
+              <option value="No Limitation">No Limitation</option>
+            </select>
+          </div>
+        );
+      },
     },
     {
       headerName: "Actions",
@@ -178,7 +295,7 @@ const PersonalisedWorkoutPage = () => {
             Edit
           </button>
           <button
-            onClick={() => deleteWorkout(params.data.id)} // Call delete with workout data
+            onClick={() => deleteWorkout(params.data.id)}
             style={{
               backgroundColor: "red",
               color: "white",
@@ -220,16 +337,14 @@ const PersonalisedWorkoutPage = () => {
     formData.append("file", selectedBulkFile);
 
     try {
-      // Make an API call to upload the bulk file
       const response = await ApiService.safePost(
         "/personalized-workout/bulk-upload",
         formData
       );
 
-      // After successful upload, refresh the workouts list
       fetchWorkouts();
-      setBulkModalOpen(false); // Close the modal after upload
-      setSelectedBulkFile(null); // Reset the file input state
+      setBulkModalOpen(false);
+      setSelectedBulkFile(null);
       console.log("Bulk upload successful:", response.data);
       toast.success(`BULK uploaded`);
     } catch (error) {
@@ -294,6 +409,9 @@ const PersonalisedWorkoutPage = () => {
             ]}
             animateRows={true}
             rowSelection="single"
+            onGridReady={onGridReady}
+            isExternalFilterPresent={isExternalFilterPresent}
+            doesExternalFilterPass={doesExternalFilterPass}
           />
         </div>
       </div>
@@ -523,7 +641,7 @@ const PersonalisedWorkoutPage = () => {
       <SingleModalComponent
         show={isBulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
-        onSave={handleBulkUpload} // Upload file on Save
+        onSave={handleBulkUpload}
         onCancel={() => setBulkModalOpen(false)}
         title="Bulk Upload Workouts"
       >
