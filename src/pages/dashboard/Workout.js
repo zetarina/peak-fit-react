@@ -529,11 +529,14 @@ const WorkoutsPage = () => {
             >
               Video URL (YouTube)
             </label>
-            <img
-              src={newWorkout.thumbnail}
-              alt="Thumbnail"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
+
+            {newWorkout.thumbnail && (
+              <img
+                src={newWorkout.thumbnail}
+                alt="Thumbnail"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            )}
             <input
               type="text"
               id="videoUrl"

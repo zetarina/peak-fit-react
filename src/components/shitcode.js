@@ -107,7 +107,6 @@ const WorkoutTable = () => {
   };
 
   const handleDelete = (id) => {
- 
     setWorkoutToDelete(id);
     setIsDeleteModalOpen(true); // Open modal
     setIsgoalDropdownOpen(false);
@@ -567,10 +566,8 @@ const WorkoutTable = () => {
                     const videoUrl = e.target.value;
                     setNewWorkout((prevWorkout) => ({
                       ...prevWorkout,
-                      videoUrl, // Update the video URL
+                      videoUrl,
                     }));
-
-                    // Extract video ID and set thumbnail
                     try {
                       let videoId = null;
                       if (videoUrl.includes("v=")) {
@@ -588,13 +585,13 @@ const WorkoutTable = () => {
                       } else {
                         setNewWorkout((prevWorkout) => ({
                           ...prevWorkout,
-                          thumbnail: "", // Clear thumbnail if URL is invalid
+                          thumbnail: "",
                         }));
                       }
                     } catch {
                       setNewWorkout((prevWorkout) => ({
                         ...prevWorkout,
-                        thumbnail: "", // Clear thumbnail in case of an error
+                        thumbnail: "",
                       }));
                     }
                   }}
