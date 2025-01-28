@@ -8,15 +8,16 @@ import {
   TextEditorModule,
   ValidationModule,
 } from "ag-grid-community";
-import "ag-grid-community/styles/ag-theme-alpine.css"; // Theme CSS
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import ApiService from "@/services/ApiService";
 import getYouTubeThumbnailUrl from "../../utils/youtube";
 import { useUser } from "../../contexts/UserContext";
+import LoadingOverlay from "@/components/LoadingOverlay";
 const Dashboard = () => {
   const { user } = useUser();
   const [rowData, setRowData] = useState([]);
-  const [editableData, setEditableData] = useState({}); // Tracks changes
-
+  const [editableData, setEditableData] = useState({});
+  const [loading, setLoading] = useState(true);
   const handleFieldChange = (id, field, value) => {
     setEditableData((prev) => ({
       ...prev,
@@ -28,27 +29,28 @@ const Dashboard = () => {
   };
 
   const handleApprove = async (id) => {
-    const updatedWorkout =
-      editableData[id] || rowData.find((row) => row.id === id);
-    console.log(updatedWorkout);
-    console.log(editableData[id]);
-
-    if (!updatedWorkout) return;
-    const workout = {
-      id,
-      level:
-        editableData[id].level || rowData.find((row) => row.id === id).level,
-      type: editableData[id].type || rowData.find((row) => row.id === id).type,
-      title:
-        editableData[id].title ||
-        rowData.find((row) => row.id === id)["content-name"],
-      videoUrl: rowData.find((row) => row.id === id)["content-url"],
-      thumbnailUrl: getYouTubeThumbnailUrl(
-        rowData.find((row) => row.id === id)["content-url"]
-      ),
-    };
-    console.log(workout);
     try {
+      setLoading(true);
+      const updatedWorkout =
+        editableData[id] || rowData.find((row) => row.id === id);
+      console.log(updatedWorkout);
+      console.log(editableData[id]);
+
+      if (!updatedWorkout) return;
+      const workout = {
+        id,
+        level:
+          editableData[id].level || rowData.find((row) => row.id === id).level,
+        type:
+          editableData[id].type || rowData.find((row) => row.id === id).type,
+        title:
+          editableData[id].title ||
+          rowData.find((row) => row.id === id)["content-name"],
+        videoUrl: rowData.find((row) => row.id === id)["content-url"],
+        thumbnailUrl: getYouTubeThumbnailUrl(
+          rowData.find((row) => row.id === id)["content-url"]
+        ),
+      };
       const response = await ApiService.post(`/workouts/approve`, { workout });
       console.log(response);
       if (response.success) {
@@ -64,11 +66,14 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Error approving workout:", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDecline = async (id) => {
     try {
+      setLoading(true);
       const response = await ApiService.delete(`/workouts/pending/${id}`);
 
       if (response.success) {
@@ -84,6 +89,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Error declining workout:", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -170,13 +177,19 @@ const Dashboard = () => {
       flex: 1,
     },
     {
+      headerName: "Date Created",
+      field: "date",
+      sortable: true,
+      filter: true,
+      valueFormatter: (params) => new Date(params.value).toLocaleDateString(),
+    },
+    {
       headerName: "Actions",
       field: "id",
       cellRenderer: (params) => {
         const data = params.data;
         const editableEntry = editableData[data.id] || data;
 
-        // Check if level or type is not selected
         const isDisabled =
           editableEntry.level === "Select Level" ||
           editableEntry.type === "Select Category" ||
@@ -212,15 +225,24 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchPendingWorkouts = async () => {
       try {
+        setLoading(true);
         const response = await ApiService.get("/workouts/pending");
         const normalizedData = response.data.map((workout) => ({
           ...workout,
           title: workout["content-name"] || workout.title,
           videoUrl: workout["content-url"] || workout.videoUrl,
+          date: new Date(workout["lastUpdated"]) || new Date(),
         }));
-        setRowData(normalizedData.slice(0, 3));
+
+        const sortedData = normalizedData.sort(
+          (a, b) => new Date(b.date) - new Date(a.date)
+        );
+
+        setRowData(sortedData);
       } catch (error) {
         console.error("Error fetching workouts:", error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -235,13 +257,13 @@ const Dashboard = () => {
       <h3 style={styles.sectionTitle}>Recent Mails</h3>
       <div
         className="ag-theme-alpine"
-        style={{ height: "300px", width: "100%" }}
+        style={{ height: "200px", width: "100%" }}
       >
         <AgGridReact
           rowData={rowData}
           columnDefs={columnDefs}
           pagination={false}
-          paginationPageSize={10}
+          paginationPageSize={3}
           modules={[
             ClientSideRowModelModule,
             PaginationModule,
@@ -254,6 +276,7 @@ const Dashboard = () => {
           rowSelection="single"
         />
       </div>
+      <LoadingOverlay isLoading={loading} message="Loading..." />
     </section>
   );
 };

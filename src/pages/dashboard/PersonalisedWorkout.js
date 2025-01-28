@@ -147,6 +147,8 @@ const PersonalisedWorkoutPage = () => {
   const columnDefs = [
     {
       headerName: "Thumbnail",
+      sortable: false,
+      filter: false,
       field: "thumbnail",
       cellRenderer: (params) => {
         const thumbnailUrl = getYouTubeThumbnailUrl(params.data.videoUrl);
@@ -261,6 +263,13 @@ const PersonalisedWorkoutPage = () => {
           </div>
         );
       },
+    },
+    {
+      headerName: "Date Created",
+      field: "date",
+      sortable: true,
+      filter: true,
+      valueFormatter: (params) => new Date(params.value).toLocaleDateString(),
     },
     {
       headerName: "Actions",

@@ -14,7 +14,7 @@ import ProfilePage from "./pages/dashboard/Profile";
 import Mails from "./pages/dashboard/Mails";
 import Workout from "./pages/dashboard/Workout";
 import PersonalisedWorkout from "./pages/dashboard/PersonalisedWorkout";
-import Approval from "./pages/dashboard/Approval";
+import DashboardHome from "./pages/dashboard/DashboardHome";
 import MainLayout from "./layouts/MainLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
@@ -46,7 +46,7 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Approval />} />
+        <Route index element={<DashboardHome />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="mails" element={<Mails />} />
         <Route path="workouts" element={<Workout />} />

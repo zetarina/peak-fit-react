@@ -6,7 +6,7 @@ import {
   RowSelectionModule,
   TextFilterModule,
 } from "ag-grid-community";
-import "ag-grid-community/styles/ag-theme-alpine.css"; // Theme CSS
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import SingleModalComponent from "../../components/SingleModalComponent";
 import ApiService from "@/services/ApiService";
 import getYouTubeThumbnailUrl from "../../utils/youtube";
@@ -29,6 +29,34 @@ const WorkoutsPage = () => {
     thumbnail: "",
     videoUrl: "",
   });
+  const [gridApi, setGridApi] = useState(null);
+  const [filters, setFilters] = useState({
+    type: "",
+    level: "",
+  });
+  const isExternalFilterPresent = () => {
+    return !!(filters.type || filters.level);
+  };
+
+  const doesExternalFilterPass = (node) => {
+    const { type, level } = filters;
+    const { data } = node;
+
+    const passesGoal = !type || data.type === type;
+    const passesLevel = !level || data.level === level;
+
+    return passesGoal && passesLevel;
+  };
+
+  const onGridReady = (params) => {
+    setGridApi(params.api);
+  };
+
+  useEffect(() => {
+    if (gridApi) {
+      gridApi.onFilterChanged();
+    }
+  }, [filters]);
 
   useEffect(() => {
     fetchWorkouts();
@@ -37,11 +65,11 @@ const WorkoutsPage = () => {
   const fetchWorkouts = async () => {
     try {
       const responase2 = await ApiService.safeGet("/workouts/approved");
-      console.log(responase2.data); // Check the data structure in the console
+      console.log(responase2.data);
 
       const responase = await ApiService.safeGet("/workouts/approved");
 
-      setRowData(responase.data); // Make sure the state is updated with correct data
+      setRowData(responase.data);
     } catch (error) {
       console.error("Error fetching workouts:", error);
       toast.error("Failed to fetch workouts");
@@ -52,25 +80,23 @@ const WorkoutsPage = () => {
   const saveWorkout = async () => {
     try {
       setLoading(true);
-      // Ensure the thumbnail is properly set before saving
+
       const workoutToSave = {
         ...newWorkout,
         thumbnail:
-          newWorkout.thumbnail || getYouTubeThumbnailUrl(newWorkout.videoUrl), // Fallback to generating thumbnail from video URL
+          newWorkout.thumbnail || getYouTubeThumbnailUrl(newWorkout.videoUrl),
+        date: newWorkout.id ? newWorkout.date || new Date() : new Date(),
       };
 
       if (newWorkout.id) {
-        // Update existing workout
         await ApiService.safePut(
           `/workouts/approved/${newWorkout.id}`,
           workoutToSave
         );
       } else {
-        // Create new workout
         await ApiService.safePost("/workouts/createApproved", workoutToSave);
       }
 
-      // Refresh the workouts list
       fetchWorkouts();
       setEditModalOpen(false);
       resetNewWorkout();
@@ -92,7 +118,6 @@ const WorkoutsPage = () => {
         return;
       }
 
-      // Delete the workout from the API
       await ApiService.safeDelete(`/workouts/approved/${id}`);
 
       fetchWorkouts();
@@ -121,8 +146,8 @@ const WorkoutsPage = () => {
     {
       headerName: "Thumbnail",
       field: "thumbnail",
-      sortable: true,
-      filter: true,
+      sortable: false,
+      filter: false,
       cellRenderer: (params) => {
         const thumbnailUrl = getYouTubeThumbnailUrl(params.data.videoUrl);
         return (
@@ -135,8 +160,85 @@ const WorkoutsPage = () => {
       },
     },
     { headerName: "Title", field: "title", sortable: true, filter: true },
-    { headerName: "Type", field: "type", sortable: true, filter: true },
-    { headerName: "Level", field: "level", sortable: true, filter: true },
+    {
+      headerName: "Type",
+      field: "type",
+      sortable: true,
+      filter: true,
+      headerComponent: (params) => {
+        const handleFilterChange = (e) => {
+          setFilters((prev) => ({ ...prev, type: e.target.value }));
+        };
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontWeight: "bold" }}>{params.displayName}</span>
+            <select
+              onChange={handleFilterChange}
+              value={filters.type}
+              style={{
+                padding: "5px",
+                fontSize: "12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">All Types</option>
+              <option value="Chest">Chest</option>
+              <option value="Back">Back</option>
+              <option value="Biceps">Biceps</option>
+              <option value="Triceps">Triceps</option>
+              <option value="Shoulders">Shoulders</option>
+              <option value="Core">Core</option>
+              <option value="Legs">Legs</option>
+              <option value="Glutes">Glutes</option>
+              <option value="Cardio">Cardio</option>
+            </select>
+          </div>
+        );
+      },
+    },
+    {
+      headerName: "Level",
+      field: "level",
+      sortable: true,
+      filter: true,
+      headerComponent: (params) => {
+        const handleFilterChange = (e) => {
+          setFilters((prev) => ({ ...prev, level: e.target.value }));
+        };
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontWeight: "bold" }}>{params.displayName}</span>
+            <select
+              onChange={handleFilterChange}
+              value={filters.level}
+              style={{
+                padding: "5px",
+                fontSize: "12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              <option value="">All Level</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+        );
+      },
+    },
+    {
+      headerName: "Date Created",
+      field: "date",
+      sortable: true,
+      filter: true,
+      valueFormatter: (params) => new Date(params.value).toLocaleDateString(),
+    },
     {
       headerName: "Actions",
       cellRenderer: (params) => (
@@ -170,7 +272,7 @@ const WorkoutsPage = () => {
             Edit
           </button>
           <button
-            onClick={() => deleteWorkout(params.data.id)} // Call delete with workout data
+            onClick={() => deleteWorkout(params.data.id)}
             style={{
               backgroundColor: "red",
               color: "white",
@@ -212,18 +314,14 @@ const WorkoutsPage = () => {
     formData.append("file", selectedBulkFile);
 
     try {
-      ///// NEED TO FIX HAVENT TOUCHED
-
-      // Make an API call to upload the bulk file
       const response = await ApiService.safePost(
         "/personalized-workout/bulk-upload",
         formData
       );
 
-      // After successful upload, refresh the workouts list
       fetchWorkouts();
-      setBulkModalOpen(false); // Close the modal after upload
-      setSelectedBulkFile(null); // Reset the file input state
+      setBulkModalOpen(false);
+      setSelectedBulkFile(null);
       console.log("Bulk upload successful:", response.data);
       toast.success(`BULK uploaded`);
     } catch (error) {
@@ -288,6 +386,9 @@ const WorkoutsPage = () => {
             ]}
             animateRows={true}
             rowSelection="single"
+            onGridReady={onGridReady}
+            isExternalFilterPresent={isExternalFilterPresent}
+            doesExternalFilterPass={doesExternalFilterPass}
           />
         </div>
       </div>
@@ -458,7 +559,7 @@ const WorkoutsPage = () => {
       <SingleModalComponent
         show={isBulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
-        onSave={handleBulkUpload} // Upload file on Save
+        onSave={handleBulkUpload}
         onCancel={() => setBulkModalOpen(false)}
         title="Bulk Upload Workouts"
       >

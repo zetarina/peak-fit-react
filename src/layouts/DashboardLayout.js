@@ -34,11 +34,65 @@ const DashboardLayout = () => {
   // If user data is still loading, show the loading screen
   if (loading) {
     return (
-      <div style={styles.fullPageContainer}>
-        <h1>Loading your data...</h1>
-      </div>
+      <>
+        {/* Injecting animations with a style tag */}
+        <style>
+          {`
+            @keyframes spin {
+              0% {
+                transform: rotate(0deg);
+              }
+              100% {
+                transform: rotate(360deg);
+              }
+            }
+  
+            @keyframes fade-in {
+              0% {
+                opacity: 0;
+              }
+              100% {
+                opacity: 1;
+              }
+            }
+          `}
+        </style>
+  
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+            backgroundColor: "#f0f8ff", // Soft blue background
+            color: "#007bff", // Primary blue for text
+            fontFamily: "'Arial', sans-serif",
+            textAlign: "center",
+            animation: "fade-in 1s ease-in-out", // Smooth fade-in
+          }}
+        >
+          <h1 style={{ fontSize: "2.5rem", marginBottom: "20px" }}>
+            Loading your data...
+          </h1>
+          <div
+            style={{
+              width: "50px",
+              height: "50px",
+              border: "5px solid #007bff", // Spinner border color
+              borderTop: "5px solid transparent", // Transparent top for spin effect
+              borderRadius: "50%", // Circular shape
+              animation: "spin 1s linear infinite", // Infinite spin animation
+            }}
+          />
+          <p style={{ marginTop: "20px", fontSize: "1rem", color: "#555" }}>
+            Please wait, we're preparing everything for you!
+          </p>
+        </div>
+      </>
     );
   }
+  
 
   // If the user is not approved, show the "under review" message
   if (!user?.isApproveUser) {
